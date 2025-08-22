@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   increment,
@@ -10,55 +10,32 @@ import {
   anotherIncrement,
   anotherIncrementByAmount,
 } from "./features/anotherCounterSlice";
-import { addTodo, removeTodo, toggleTodo } from "./features/todoSlice";
+import {
+  addTodo,
+  removeTodo,
+  toggleTodo,
+} from "./features/todoSlice";
+import TodoList from "./components/TodoList";
+import Counter from "./components/Counter";
+import { fetchTodos } from "./features/todoThunk";
 
-const Counter = ({
-  value,
-  onIncrement,
-  onDecrement,
-  onIncrementByAmount,
-  label,
-  incrementAmount,
-}) => (
-  <div>
-    <h1>{label}</h1>
-    <h2>{value}</h2>
-    <button onClick={onIncrement}>Increment</button>
-    <button onClick={onDecrement}>Decrement</button>
-    <button onClick={() => onIncrementByAmount(incrementAmount)}>
-      Increment by {incrementAmount}
-    </button>
-  </div>
-);
-
-const TodoList = ({ todos, onToggle, onRemove }) => (
-  <ul style={{ listStyle: "none", padding: 0 }}>
-    {todos.map((todo) => (
-      <li key={todo.id}>
-        <span
-          onClick={() => onToggle(todo.id)}
-          style={{
-            textDecoration: todo.completed ? "line-through" : "none",
-            cursor: "pointer",
-          }}
-        >
-          {todo.text}
-        </span>
-        <button onClick={() => onRemove(todo.id)}>❌</button>
-      </li>
-    ))}
-  </ul>
-);
 
 function App() {
   const [text, setText] = useState("");
+  const status = useSelector((state)=>state.todo.status)
+  const todos = useSelector((state)=>state.todo.todos)
   const count = useSelector((state) => state.counter.value);
   const anotherCount = useSelector(
     (state) => state.anotherCounter.anotherValue
   );
-  const todos = useSelector((state) => state.todo.todos);
 
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchTodos());
+  }, [dispatch]);
+
+  if (status==="failed") return <p>Error: {status}</p>;
 
   const handleAdd = () => {
     if (text.trim()) {
@@ -93,11 +70,19 @@ function App() {
         placeholder="Enter todo"
       />
       <button onClick={handleAdd}>Add Todo</button>
-      <TodoList
-        todos={todos}
-        onToggle={(id) => dispatch(toggleTodo(id))}
-        onRemove={(id) => dispatch(removeTodo(id))}
-      />
+      {status==="pending" ? (
+        <p>Loading...</p>
+      ) : (
+        <ul>
+          {
+            <TodoList
+              todos={todos}
+              onToggle={(id) => dispatch(toggleTodo(id))}
+              onRemove={(id) => dispatch(removeTodo(id))}
+            />
+          }
+        </ul>
+      )}
     </div>
   );
 }
